@@ -1,0 +1,108 @@
+index.html
+<!DOCTYPE html><html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minecraft Like PWA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />  <!-- PWA -->  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#55aa55">  <style>
+    html, body { margin:0; padding:0; overflow:hidden; background:#87ceeb; touch-action:none; }
+    #menu {
+      position:fixed; inset:0; background:linear-gradient(#87ceeb,#55aa55);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-family:sans-serif; z-index:20;
+    }
+    #menu h1 { font-size:32px; margin-bottom:20px; }
+    #menu button {
+      width:220px; padding:14px; margin:8px;
+      font-size:18px; border:none; border-radius:12px;
+      background:#3a7d3a; color:white;
+    }
+    #hud {
+      position:fixed; top:10px; left:50%; transform:translateX(-50%);
+      color:white; font-family:sans-serif; z-index:10;
+      background:rgba(0,0,0,0.4); padding:6px 12px; border-radius:10px;
+    }
+  </style></head>
+<body><div id="menu">
+  <h1>Minecraft Like</h1>
+  <button onclick="startGame('creative')">Mode Créatif</button>
+  <button onclick="startGame('survival')">Mode Survie</button>
+</div><div id="hud" style="display:none">❤️ <span id="life">20</span> | 🍗 <span id="food">20</span></div><script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script><script>
+let mode='creative';
+let life=20, food=20;
+
+function startGame(m){
+  mode=m;
+  document.getElementById('menu').style.display='none';
+  document.getElementById('hud').style.display='block';
+  init();
+}
+
+let scene,camera,renderer;
+const blocks=new Map();
+
+function init(){
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+  camera.position.set(0,2,5);
+
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(innerWidth,innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff,0.6));
+  const sun=new THREE.DirectionalLight(0xffffff,0.8);
+  sun.position.set(10,20,10);
+  scene.add(sun);
+
+  generateWorld();
+  animate();
+}
+
+function generateWorld(){
+  const geo=new THREE.BoxGeometry(1,1,1);
+  const grass=new THREE.MeshLambertMaterial({color:0x55aa55});
+  const dirt=new THREE.MeshLambertMaterial({color:0x8b5a2b});
+
+  for(let x=-20;x<=20;x++){
+    for(let z=-20;z<=20;z++){
+      addBlock(x,0,z,grass);
+      addBlock(x,-1,z,dirt);
+      if(Math.random()<0.05) makeTree(x,1,z);
+    }
+  }
+}
+
+function addBlock(x,y,z,mat){
+  const key=`${x},${y},${z}`;
+  if(blocks.has(key)) return;
+  const m=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),mat);
+  m.position.set(x,y,z);
+  scene.add(m);
+  blocks.set(key,m);
+}
+
+function makeTree(x,y,z){
+  const wood=new THREE.MeshLambertMaterial({color:0x8b4513});
+  const leaf=new THREE.MeshLambertMaterial({color:0x2ecc71});
+  for(let i=0;i<3;i++) addBlock(x,y+i,z,wood);
+  for(let dx=-1;dx<=1;dx++)
+    for(let dz=-1;dz<=1;dz++)
+      addBlock(x+dx,y+3,z+dz,leaf);
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(mode==='survival'){
+    food=Math.max(0,food-0.0005);
+    document.getElementById('food').textContent=Math.floor(food);
+  }
+  renderer.render(scene,camera);
+}
+
+// Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js');
+}
+</script></body>
+</html>
